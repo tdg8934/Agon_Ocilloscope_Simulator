@@ -18,7 +18,6 @@
    80 DIM hidecursor% 32
    90 DIM showcursor% 32
    95 DIM debugA% 64
-   97 DIM multiPurposeDelay% 64
   100 REM This routine is for setting up and include statements
   110 FOR I%=0 TO 3 STEP 3
   120   P%=setupi2c%
@@ -29,7 +28,7 @@
   160   ;include "debug_routines.asm"
   170   ;include "delay_routines.asm"
   180   ;
-  185   ld a, 12 : rst &10 : ;CLS
+  185   ld a, 12: rst &10 ;CLS
   190   call hidecursor%
   200   ld hl, string
   210   ld bc, endstring - string
@@ -194,54 +193,21 @@
  1820   ; NO ret here
  1830   ]
  1840 NEXT
- 1900 FOR I%=0 TO 3 STEP 3
- 1910   P%=multiPurposeDelay%
- 1920   [
- 1930   OPT I%
- 1940   .multiPurposeDelay
- 1950   push af : push bc
- 1960   ld b, a
- 1970   ld a, &08 : rst &08 : ;MOSCALL &08
- 1980   .waitLoop
- 1990   ld a, (ix + 0)
- 2000   and b
- 2010   ld c, a
- 2020   ld a, (oldTimeStamp)
- 2030   cp c
- 2040   jr z, waitLoop
- 2050   ld a, c
- 2060   ld (oldTimeStamp), a
- 2070   pop bc : pop af
- 2080   ret
- 2090   .oldTimeStamp
- 2095   DEFB &00
- 2100   .miniDelay
- 2110   push bc
- 2120   ld bc, 0
- 2130   ld b, 10
- 2140   .miniLoop
- 2150   djnz miniLoop
- 2160   pop bc
- 2170   ret
- 2180   ]
- 2190 NEXT
- 2300 REM This routine is to read i2c data
  2601 :
  2999 :
  3000 REM ---------------------------------------------------------
  3001 REM This is the user Basic program
  3002 REM ---------------------------------------------------------
  3010 REM
- 3015 I = 0
  3020 CALL setupi2c%
  3030 CALL openi2c%
  3040 REM LOOP HERE
  3050 IF INKEY(-113) THEN GOTO 3080
- 3052 REM VOLTAGE CONVERT ADC: PRINT (VREF * SAMPLE)/RANGE
- 3053 REM EXAMPLE: PRINT (3.3 * &1DFA)/&FFFF
+ 3053 REM EXAMPLE: PRINT &1DFA/&FFFF * 3.3
  3060 CALL readi2c%
- 3065 PRINT (3.3 * (readi2c% + I))/&FFFF
- 3067 I=I+1
+ 3062 PRINT
+ 3063 PRINT readi2c%
+ 3065 PRINT readi2c%/&FFFF * 3.3
  3070 GOTO 3040
  3080 CALL closei2c%
  3090 CALL showcursor%
