@@ -5,7 +5,8 @@
 
     .assume adl=1       ; ez80 ADL memory mode
     .org $40000         ; load code here
-    include "macros.inc"
+    include "myMacros.inc"
+
     jp start_here       ; jump to start of code
 
     .align 64           ; MOS header
@@ -13,6 +14,8 @@
 
     include "debug_routines.asm"
     include "delay_routines.asm"
+    include "math_routines.asm"
+
 
 start_here:
             
@@ -24,8 +27,29 @@ start_here:
 
 ; ------------------
 ; This is our actual code
-    CLS
-    call hidecursor                 ; hide the cursor
+
+
+    SET_MODE 0		; mode 0 640x480, 16 colours
+    
+    ld hl, VDUdataNonScaledGraphics
+    ld bc, endVDUdataNonScaledGraphics - VDUdataNonScaledGraphics
+    rst.lil $18
+
+    ld hl, VDUdataGCOLmode
+    ld bc, endVDUdataGCOLmode - VDUdataGCOLmode
+    rst.lil $18
+
+    ld a, 0
+    ld (VDUdataX), a
+    ld a, 0
+    ld (VDUdataY), a
+    ld hl, VDUdataPixel
+    ld bc, endVDUdataPixel - VDUdataPixel
+    rst.lil $18
+
+
+   
+    call hidecursor     ; hide the cursor
 
     ld hl, string       ; address of string to use
     ld bc, endString - string             ; length of string, or 0 if a delimiter is used
@@ -36,18 +60,26 @@ start_here:
 
     call open_i2c
 
-
+    ld d, 0		; counter for waveform - zeroed 
+        
+    
 LOOP_HERE:
     MOSCALL $1E                         ; get IX pointer to keyvals, currently pressed keys
     ld a, (ix + $0E)    
     bit 0, a    
     jp nz, EXIT_HERE                    ; ESC key to exit
 
-    ld a, 0000100b
-    call multiPurposeDelay      ; wait a bit
-
+;    ld a, 00000010b
+;    call multiPurposeDelay      ; wait a bit
+        
+LOOPD:
     call read_i2c
-
+    
+    inc d
+    ld a, d
+    cp 240
+    jp z, LOOPD    
+      
     jr LOOP_HERE
 
 
@@ -56,8 +88,8 @@ LOOP_HERE:
 EXIT_HERE:
 
 ; need to close i2c port
-   call close_i2c
-   call showcursor
+    call close_i2c
+    call showcursor
     CLS 
 
     pop iy              ; Pop all registers back from the stack
@@ -141,7 +173,7 @@ read_i2c:
     ld hl, i2c_read_buffer
     MOSCALL $22
    
-    ld a, 000000010b
+    ld a, 00000010b
     call multiPurposeDelay      ; wait a bit
    
     ; display the data
@@ -168,6 +200,18 @@ read_i2c:
     call debugA
 
 
+   ; ld a, (LSB)
+    ld a, (MSB)
+    ld (VDUdataY), a 
+
+    ld a, d
+    ld (VDUdataX), a
+
+    ld hl, VDUdataPixel
+    ld bc, endVDUdataPixel - VDUdataPixel
+    rst.lil $18
+
+
     ret 
 
 
@@ -177,6 +221,9 @@ close_i2c:
      MOSCALL $20
 
     ret 
+
+ ; ------------------
+
 
  ; ------------------
 
@@ -205,6 +252,26 @@ showcursor:
 
  ; ------------------
 
+VDUdataNonScaledGraphics:
+    .db 23, 0, 192, 0
+endVDUdataNonScaledGraphics:
+
+
+VDUdataGCOLmode:
+    .db 18, 0, 9
+endVDUdataGCOLmode:
+
+
+VDUdataPixel:
+    .db 25, 69
+VDUdataX:
+    .dw 0
+VDUdataY:
+    .dw 0
+endVDUdataPixel:
+ 
+
+
 
 string:
     .db 31, 0,0,"Testing i2c adc"
@@ -221,7 +288,7 @@ i2c_write_buffer:
 
 MSB:       .db     0
 LSB:       .db     0
-
+  
 
 
 
