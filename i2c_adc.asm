@@ -26,61 +26,78 @@ start_here:
     push iy
 
 ; ------------------
-; This is our actual code
+; This is our actual code in ez80 assembly
 
 
     SET_MODE 0		; mode 0 640x480, 16 colours
     
+    ;Set Non Scaled Graphics (0,0 in upper left screen)
+
     ld hl, VDUdataNonScaledGraphics
     ld bc, endVDUdataNonScaledGraphics - VDUdataNonScaledGraphics
     rst.lil $18
-
+    
+    ;Set pixel color to red
+    
     ld hl, VDUdataGCOLmode
     ld bc, endVDUdataGCOLmode - VDUdataGCOLmode
     rst.lil $18
 
-    ld a, 0
-    ld (VDUdataX), a
-    ld a, 0
-    ld (VDUdataY), a
-    ld hl, VDUdataPixel
-    ld bc, endVDUdataPixel - VDUdataPixel
-    rst.lil $18
-
-
    
     call hidecursor     ; hide the cursor
 
-    ld hl, string       ; address of string to use
-    ld bc, endString - string             ; length of string, or 0 if a delimiter is used
-
-    rst.lil $18         ; Call the MOS API to send data to VDP 
+   ; Keep but not used for now...
+   ; ld hl, string       ; address of string to use
+   ; ld bc, endString - string             ; length of string, or 0 if a delimiter is used
+   ; rst.lil $18         ; Call the MOS API to send data to VDP 
 
 ; need to setup i2c port
 
     call open_i2c
 
-    ld d, 0		; counter for waveform - zeroed 
-        
+
+
+    ld d, 255     	 ; (dec d) counter for waveform - 255 to 0 on x axis 
+    ld e, 0		 ; used to draw waveform left->right - 0 to 255 
     
 LOOP_HERE:
-    MOSCALL $1E                         ; get IX pointer to keyvals, currently pressed keys
+    MOSCALL $1E          ; get IX pointer to keyvals, currently pressed keys
     ld a, (ix + $0E)    
     bit 0, a    
-    jp nz, EXIT_HERE                    ; ESC key to exit
+    jp nz, EXIT_HERE            ; ESC key to exit
 
-;    ld a, 00000010b
-;    call multiPurposeDelay      ; wait a bit
-        
-LOOPD:
-    call read_i2c
+    ld a, 00000010b
+    call multiPurposeDelay      ; wait a bit
+
     
-    inc d
-    ld a, d
-    cp 240
-    jp z, LOOPD    
-      
-    jr LOOP_HERE
+LOOPD:
+    call read_i2c		;set delay here for loose or tight waveform
+  
+     
+    ld a, (hl)
+    ld (MSB), a			;put MSB value into pixel Y location
+    ld (VDUdataY), a		;MSB waveform
+
+    inc hl			;increment h (MSB) to l (LSB) 
+    ld a, (hl)
+    ld (LSB), a
+   ; ld (VDUdataY), a		;LSB waveform
+       
+    ld a, e    			;put e value into a for pixel X location
+    ld (VDUdataX), a    
+  
+
+  
+    ld hl, VDUdataPixel         ;plot out the waveform with e (x) and MSB (y)
+    ld bc, endVDUdataPixel - VDUdataPixel
+    rst.lil $18
+  
+
+    inc e
+    dec d 
+    jr nz, LOOPD    
+    
+  ; jr LOOP_HERE		;for now just run the waveform one time
 
 
 ; ------------------
@@ -90,7 +107,8 @@ EXIT_HERE:
 ; need to close i2c port
     call close_i2c
     call showcursor
-    CLS 
+
+   ;CLS			; For now dont clear the screen 
 
     pop iy              ; Pop all registers back from the stack
     pop ix
@@ -133,13 +151,12 @@ open_i2c:
     ; Bits 1:0 Comparitor # before Alert pin goes high
     ;          00=1, 01=2, 10=4, 11=Disable this feature
    
-; may need to check for little endian used on Agon - MSB and LSB switched?
- 
-   ; ld (hl), 01000010b		; 2nd byte ($42) MSB of Config reg to write 
+
+                  		; 2nd byte ($42) MSB of Config reg to write 
     ld (hl), 00000010b          ; switch MSB with LSB - little endian?
     inc hl
 
-   ; ld (hl), 00000010b		; 3rd byte ($02) LSB of Config reg to write
+                        	; 3rd byte ($02) LSB of Config reg to write
     ld (hl), 01000010b          ; switch LSB with MSB - little endian?
     ld hl, i2c_write_buffer
     MOSCALL $21
@@ -167,65 +184,34 @@ read_i2c:
 
     ; ask for data
 
-   
     ld c, $48   		; i2c address ($48)
     ld b,2			; number of bytes to receive
     ld hl, i2c_read_buffer
     MOSCALL $22
    
+
+
+    ;This is the delay that allows a loose or tight waveform of samples
+    ; ie... ld a, 00000010b loose  ld a, 00010000b tight depending on LSB/MSB
+    ;
+
+   ; ld a, 00010000b
     ld a, 00000010b
     call multiPurposeDelay      ; wait a bit
    
-    ; display the data
-
-    ld hl, i2c_read_buffer
-
-
-    ld a, (hl)
-    ld (MSB), a
-    inc hl
-
-    ld a, (hl)
-    ld (LSB), a
-
-
-    ld b, 0
-    ld c, 1
-    ld a, (MSB)
-    call debugA
-
-    ld b, 0
-    ld c, 2
-    ld a, (LSB)
-    call debugA
-
-
-   ; ld a, (LSB)
-    ld a, (MSB)
-    ld (VDUdataY), a 
-
-    ld a, d
-    ld (VDUdataX), a
-
-    ld hl, VDUdataPixel
-    ld bc, endVDUdataPixel - VDUdataPixel
-    rst.lil $18
-
-
+  
     ret 
 
 
 
 close_i2c:
 
-     MOSCALL $20
+    MOSCALL $20
 
     ret 
 
  ; ------------------
 
-
- ; ------------------
 
 hidecursor:
     push af
@@ -252,18 +238,19 @@ showcursor:
 
  ; ------------------
 
-VDUdataNonScaledGraphics:
-    .db 23, 0, 192, 0
+VDUdataNonScaledGraphics:	; VDU 23,0,192,0 - Non scaled Graphics
+    .db 23, 0, 192, 0		; coord system (0,0) in upper left screen
 endVDUdataNonScaledGraphics:
 
 
-VDUdataGCOLmode:
+VDUdataGCOLmode:		; VDU 18,0,9 - pixels are red color (9)
     .db 18, 0, 9
 endVDUdataGCOLmode:
 
 
-VDUdataPixel:
-    .db 25, 69
+
+VDUdataPixel:			; VDU 25,69,x,y - plot waveform 
+    .db 25, 69			; Use 0 to 255 x axis but must use dw (word)
 VDUdataX:
     .dw 0
 VDUdataY:
@@ -272,7 +259,7 @@ endVDUdataPixel:
  
 
 
-
+				;keep here but not used anymore
 string:
     .db 31, 0,0,"Testing i2c adc"
     .db 31, 4,1,"ADC MSB"
@@ -280,13 +267,13 @@ string:
    
 endString:
 
-i2c_read_buffer:
+i2c_read_buffer:		;i2c useage - keep
     .ds 32,0
 
 i2c_write_buffer:
     .ds 32,0
 
-MSB:       .db     0
+MSB:       .db     0		;store ADC MSB and LSB values
 LSB:       .db     0
   
 
