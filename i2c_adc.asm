@@ -80,8 +80,8 @@ LOOPD:
 
     inc hl			;increment h (MSB) to l (LSB) 
     ld a, (hl)
-    ld (LSB), a
-   ; ld (VDUdataY), a		;LSB waveform
+   ; ld (LSB), a
+    ld (VDUdataY), a		;LSB waveform
        
     ld a, e    			;put e value into a for pixel X location
     ld (VDUdataX), a    
@@ -96,8 +96,9 @@ LOOPD:
     inc e
     dec d 
     jr nz, LOOPD    
-    
-  ; jr LOOP_HERE		;for now just run the waveform one time
+
+   ; CLG
+   ; jr LOOP_HERE		;for now just run the waveform one time
 
 
 ; ------------------
@@ -131,6 +132,10 @@ open_i2c:
     ld c, $48	                ; i2c address ($48)
     ld b, 3                     ; number of bytes to send
     ld hl, i2c_write_buffer
+
+    ld (hl), 00000001b		; 1st byte points to Config register    
+    inc hl
+    
     
     ; Write the MSB + LSB of Config Register
     ; MSB: Bits 15:8
@@ -139,7 +144,7 @@ open_i2c:
     ; Bits 11:9    Programmable Gain 000=6.144v 001=4.096v 010=2.048v.. 111=0.256v
     ; Bit  8       0=Continuous conversion mode, 1=Power down single shot
 
-    ld (hl), 00000001b		; 1st byte ($01) points to Config register    
+    ld (hl), 01100010b          ; 2nd byte is MSB of Config reg to write 
     inc hl
 
     ; LSB: Bits 7:0
@@ -152,12 +157,8 @@ open_i2c:
     ;          00=1, 01=2, 10=4, 11=Disable this feature
    
 
-                  		; 2nd byte ($42) MSB of Config reg to write 
-    ld (hl), 00000010b          ; switch MSB with LSB - little endian?
-    inc hl
+    ld (hl), 00100010b          ; 16 samples - 3rd byte is LSB of Config reg to write
 
-                        	; 3rd byte ($02) LSB of Config reg to write
-    ld (hl), 01000010b          ; switch LSB with MSB - little endian?
     ld hl, i2c_write_buffer
     MOSCALL $21
 
@@ -244,7 +245,7 @@ endVDUdataNonScaledGraphics:
 
 
 VDUdataGCOLmode:		; VDU 18,0,9 - pixels are red color (9)
-    .db 18, 0, 9
+    .db 18, 0, 3
 endVDUdataGCOLmode:
 
 
