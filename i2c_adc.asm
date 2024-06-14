@@ -29,18 +29,11 @@ start_here:
 ; This is our actual code in ez80 assembly
 
 
-    SET_MODE 0		; mode 0 640x480, 16 colours
-    
-    ;Set Non Scaled Graphics (0,0 in upper left screen)
+    SET_MODE 8		; mode 8 320x240, 64 colours
+      
 
-    ld hl, VDUdataNonScaledGraphics
-    ld bc, endVDUdataNonScaledGraphics - VDUdataNonScaledGraphics
-    rst.lil $18
-    
-    ;Set pixel color to red
-    
-    ld hl, VDUdataGCOLmode
-    ld bc, endVDUdataGCOLmode - VDUdataGCOLmode
+    ld hl, VDUdata
+    ld bc, endVDUdata - VDUdata
     rst.lil $18
 
    
@@ -58,7 +51,7 @@ start_here:
 
 
     ld d, 255     	 ; (dec d) counter for waveform - 255 to 0 on x axis 
-    ld e, 0		 ; used to draw waveform left->right - 0 to 255 
+    ld e, 20		 ; used to draw waveform left->right - 0 to 255 
     
 LOOP_HERE:
     MOSCALL $1E          ; get IX pointer to keyvals, currently pressed keys
@@ -84,21 +77,23 @@ LOOPD:
     ld (VDUdataY), a		;LSB waveform
        
     ld a, e    			;put e value into a for pixel X location
-    ld (VDUdataX), a    
-  
+    ld (VDUdataX), a        
 
   
-    ld hl, VDUdataPixel         ;plot out the waveform with e (x) and MSB (y)
-    ld bc, endVDUdataPixel - VDUdataPixel
+    ld hl, VDUdata
+    ld bc, endVDUdata - VDUdata
     rst.lil $18
-  
 
+    ld a, 20  
     inc e
     dec d 
+
+    cp e
+
     jr nz, LOOPD    
 
-   ; CLG
-   ; jr LOOP_HERE		;for now just run the waveform one time
+   ; CLG                         ;comment if running one time
+   ; jr LOOP_HERE		;comment to just run the waveform one time
 
 
 ; ------------------
@@ -109,15 +104,13 @@ EXIT_HERE:
     call close_i2c
     call showcursor
 
-   ;CLS			; For now dont clear the screen 
-
     pop iy              ; Pop all registers back from the stack
     pop ix
     pop de
     pop bc
     pop af
     ld hl,0             ; Load the MOS API return code (0) for no errors.   
-
+  
     ret                 ; Return to MOS
 
 
@@ -239,26 +232,52 @@ showcursor:
 
  ; ------------------
 
-VDUdataNonScaledGraphics:	; VDU 23,0,192,0 - Non scaled Graphics
+VDUdata:
+
     .db 23, 0, 192, 0		; coord system (0,0) in upper left screen
-endVDUdataNonScaledGraphics:
+                                ; VDU 23,0,192,0 - Non scaled Graphics
 
 
-VDUdataGCOLmode:		; VDU 18,0,9 - pixels are red color (9)
-    .db 18, 0, 3
-endVDUdataGCOLmode:
-
-
-
-VDUdataPixel:			; VDU 25,69,x,y - plot waveform 
+VDUdataPixel:
+    .db 18, 0, 9		; VDU 25,69,x,y - plot waveform 
     .db 25, 69			; Use 0 to 255 x axis but must use dw (word)
 VDUdataX:
-    .dw 0
+    .dw 20
 VDUdataY:
-    .dw 0
+    .dw 20
 endVDUdataPixel:
+
+
+    .db 18, 0, 3		; draw a screen border of lines
+    .db 25, 69			; (there is no un-filled rectangle cmd)
+    .dw 10, 10			; leave some distance for monitor edges
+    .db 25, 13
+    .dw 10, 230
+    .db 25, 13
+    .dw 310,230
+    .db 25, 13
+    .dw 310,10
+    .db 25, 13
+    .dw 10,10
+   
+    .db 18, 0, 2		; draw a graphics viewpoint border of lines
+    .db 25, 69			
+    .dw 20, 20			
+    .db 25, 13
+    .dw 20, 150
+    .db 25, 13
+    .dw 260,150
+    .db 25, 13
+    .dw 260,20
+    .db 25, 13
+    .dw 20,20
+ 
+   ; .db 24			; set graphics viewport
+   ; .dw 20, 100, 230, 20	; 24, left; bottom; right; top;
+    
  
 
+endVDUdata:
 
 				;keep here but not used anymore
 string:
@@ -277,34 +296,4 @@ i2c_write_buffer:
 MSB:       .db     0		;store ADC MSB and LSB values
 LSB:       .db     0
   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
