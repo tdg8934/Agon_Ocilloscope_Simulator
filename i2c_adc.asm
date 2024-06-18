@@ -29,7 +29,7 @@ start_here:
 ; This is our actual code in ez80 assembly
 
 
-    SET_MODE 8		; mode 8 320x240, 64 colours
+    SET_MODE 0		; mode 0 640x480, 16 colours
       
 
     ld hl, VDUdata
@@ -50,8 +50,8 @@ start_here:
 
 
 
-    ld d, 255     	 ; (dec d) counter for waveform - 255 to 0 on x axis 
-    ld e, 20		 ; used to draw waveform left->right - 0 to 255 
+    ld d, 250     	 ; (dec d) counter for waveform - 255 to 0 on x axis 
+    ld e, 51		 ; used to draw waveform left->right - 0 to 255 
     
 LOOP_HERE:
     MOSCALL $1E          ; get IX pointer to keyvals, currently pressed keys
@@ -84,7 +84,7 @@ LOOPD:
     ld bc, endVDUdata - VDUdata
     rst.lil $18
 
-    ld a, 20  
+    ld a, 50  
     inc e
     dec d 
 
@@ -92,8 +92,8 @@ LOOPD:
 
     jr nz, LOOPD    
 
-   ; CLG                         ;comment if running one time
-   ; jr LOOP_HERE		;comment to just run the waveform one time
+    CLG                         ;comment if running one time
+    jr LOOP_HERE		;comment to just run the waveform one time
 
 
 ; ------------------
@@ -248,44 +248,157 @@ VDUdataY:
 endVDUdataPixel:
 
 
-    .db 18, 0, 3		; draw a screen border of lines
-    .db 25, 69			; (there is no un-filled rectangle cmd)
+    .db 18, 0, 3		; draw a screen border of lines in yellow (3)
+    .db 25, 69			; (there is no un-filled rectangle cmd)-point
     .dw 10, 10			; leave some distance for monitor edges
+    .db 25, 13			; start a line from the point coordinates
+    .dw 10, 230			; end line at these coordinates
+    .db 25, 13			; continue with another line
+    .dw 300,230			; end line at these coordinates
+    .db 25, 13			; same here 
+    .dw 300,10			; same
+    .db 25, 13			; same
+    .dw 10,10			; end line at initial point coordinates (rect)
+
+
+    .db 18, 0, 2		; draw an o-scope border of lines-green (2)
+    .db 25, 69			; same format as above to draw unfilled rect.
+    .dw 50, 30			
     .db 25, 13
-    .dw 10, 230
+    .dw 50, 150
     .db 25, 13
-    .dw 310,230
+    .dw 251,150
     .db 25, 13
-    .dw 310,10
+    .dw 251,30
     .db 25, 13
-    .dw 10,10
+    .dw 50, 30
+
+
+;Y coodinates gridlines
+    .db 18, 0, 15		; draw dotted line(s) for grid
+    .db 25, 69			; Start with a point to plot (15=white)
+    .dw 51, 40			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 250, 40			; end of dot-dash line x,y coordinates
    
-    .db 18, 0, 2		; draw a graphics viewpoint border of lines
-    .db 25, 69			
-    .dw 20, 20			
-    .db 25, 13
-    .dw 20, 150
-    .db 25, 13
-    .dw 260,150
-    .db 25, 13
-    .dw 260,20
-    .db 25, 13
-    .dw 20,20
+    .db 25, 69    
+    .dw 51, 50			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 250, 50			; end of dot-dash line x,y coordinates
  
-   ; .db 24			; set graphics viewport
-   ; .dw 20, 100, 230, 20	; 24, left; bottom; right; top;
+
+    .db 25, 69    
+    .dw 51, 60			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 250, 60			; end of dot-dash line x,y coordinates
+ 
+    .db 25, 69    
+    .dw 51, 70			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 250, 70			; end of dot-dash line x,y coordinates
+ 
+    .db 25, 69    
+    .dw 51, 80			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 250, 80			; end of dot-dash line x,y coordinates
+
+    .db 18, 0, 13		; draw dotted line(s) for grid - purple (13)
+    .db 25, 69    
+    .dw 51, 90			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 250, 90			; end of dot-dash line x,y coordinates
+    .db 18, 0, 15		; draw dotted line(s) for grid - white (15)
+ 
+    .db 25, 69    
+    .dw 51, 100			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 250, 100		; end of dot-dash line x,y coordinates
+ 
+    .db 25, 69    
+    .dw 51, 110			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 250, 110		; end of dot-dash line x,y coordinates
+ 
+    .db 25, 69    
+    .dw 51, 120			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 250, 120		; end of dot-dash line x,y coordinates
+ 
+    .db 25, 69    
+    .dw 51, 130			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 250, 130		; end of dot-dash line x,y coordinates
+ 
+    .db 25, 69    
+    .dw 51, 140			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 250, 140		; end of dot-dash line x,y coordinates
+ 
+
+;X coordinates gridlines	
+    .db 25, 69    		; same as Y coodinates above
+    .dw 70, 31			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 70, 149 		; end of dot-dash line x,y coordinates
+
+    .db 25, 69    
+    .dw 90, 31			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 90, 149 		; end of dot-dash line x,y coordinates
+
+    .db 25, 69    
+    .dw 110, 31			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 110, 149 		; end of dot-dash line x,y coordinates
+
+    .db 25, 69    
+    .dw 130, 31			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 130, 149 		; end of dot-dash line x,y coordinates
+
+    .db 18, 0, 13		; draw dotted line(s) for grid - purple (13) 
+    .db 25, 69    
+    .dw 150, 31			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 150, 149 		; end of dot-dash line x,y coordinates
+    .db 18, 0, 15		; draw dotted line(s) for grid - white (15)
+
+    .db 25, 69    
+    .dw 170, 31			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 170, 149 		; end of dot-dash line x,y coordinates
+
+    .db 25, 69    
+    .dw 190, 31			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 190, 149 		; end of dot-dash line x,y coordinates
+
+    .db 25, 69    
+    .dw 210, 31			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 210, 149 		; end of dot-dash line x,y coordinates
+
+    .db 25, 69    
+    .dw 230, 31			; point x,y coordinates
+    .db 25, 53			; now start with a dot-dash line
+    .dw 230, 149 		; end of dot-dash line x,y coordinates
+
+ 
+    ; block off o-scope area for plotting inside
+    .db 24			; set graphics viewport
+    .dw 50, 150, 250, 50	; 24, left; bottom; right; top;
     
  
 
 endVDUdata:
 
 				;keep here but not used anymore
-string:
-    .db 31, 0,0,"Testing i2c adc"
-    .db 31, 4,1,"ADC MSB"
-    .db 31, 4,2,"ADC LSB"
-   
-endString:
+;string:
+;    .db 31, 0,0,"Testing i2c adc"
+;    .db 31, 4,1,"ADC MSB"
+;    .db 31, 4,2,"ADC LSB"
+;   
+;endString:
 
 i2c_read_buffer:		;i2c useage - keep
     .ds 32,0
