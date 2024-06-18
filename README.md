@@ -32,4 +32,10 @@ https://helpfulcolin.com/xr2206-function-generator-kit-improved-instructions/
 
 https://a.co/d/0HAAz3I
 
+https://a.co/d/bqydFWO
 
+https://a.co/d/gpzG8az
+
+https://youtu.be/02XtneCHnDA?si=Ha31AnSN6S2-UdtD
+
+https://a.co/d/2H1neIJ
