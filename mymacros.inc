@@ -70,11 +70,3 @@
         rst.lil $10
         endmacro
 
-        macro PLOT_TO x,y
-        ld a, 18
-        rst.lil $10
-        ld a, 0
-        rst.lil $10
-        ld a, 9
-        rst.lil $10
-        endmacro
