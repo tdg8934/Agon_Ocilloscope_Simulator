@@ -27,3 +27,9 @@ On Agon Light 2:  >*bye
 *run
 
 Turning the potentiometer should show MSB and LSB values increasing or decreasing
+
+https://helpfulcolin.com/xr2206-function-generator-kit-improved-instructions/
+
+https://a.co/d/0HAAz3I
+
+
